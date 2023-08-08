@@ -2,9 +2,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'dart:io' show Platform;
 
-import 'package:simpsonsviewer/base/models/character.dart';
-import 'package:simpsonsviewer/base/models/constants.dart';
-import 'package:simpsonsviewer/base/views/character_detail.dart';
+import 'package:wireviewer/base/models/character.dart';
+import 'package:wireviewer/base/models/constants.dart';
+import 'package:wireviewer/base/views/character_detail.dart';
 
 /// Displays list of character names adaptively based on
 /// platform and [useScaffold], which is set by the device size

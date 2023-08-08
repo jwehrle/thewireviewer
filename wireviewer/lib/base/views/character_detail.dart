@@ -2,8 +2,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
-import 'package:simpsonsviewer/base/models/character.dart';
-import 'package:simpsonsviewer/base/models/constants.dart';
+import 'package:wireviewer/base/models/character.dart';
+import 'package:wireviewer/base/models/constants.dart';
 
 /// Character detail view used for larger screens.
 /// Always visible and changes its view depending on

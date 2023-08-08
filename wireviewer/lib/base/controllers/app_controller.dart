@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
-import 'package:simpsonsviewer/base/models/character.dart';
+import 'package:wireviewer/base/models/character.dart';
 
 /// Interpolates [showName] into URI
 String _duckDuckGoQuery(String showName) {
