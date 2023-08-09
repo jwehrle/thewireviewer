@@ -7,7 +7,7 @@ import 'package:wireviewer/base/controllers/app_controller.dart';
 import 'package:wireviewer/base/views/adaptive_layout.dart';
 
 const String kTheWireID = 'the+wire';
-const String kAppTitle = 'The Wire Viewer';
+const String kAppTitle = 'The Wire Character Viewer';
 
 void main() {
   runApp(const TheWireViewerApp());
