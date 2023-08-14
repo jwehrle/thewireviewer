@@ -1,200 +1,195 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:list_detail_base/list_detail_base.dart';
+import 'package:wireviewer/base/controllers/app_controller.dart';
 import 'dart:io' show Platform;
 
 import 'package:wireviewer/base/models/character.dart';
-import 'package:wireviewer/base/models/constants.dart';
 import 'package:wireviewer/base/views/character_detail.dart';
 
-/// Displays list of character names adaptively based on
-/// platform and [useScaffold], which is set by the device size
-/// and indicates phone or tablet.
-class CharacterList extends StatelessWidget {
-  final String appTitle;
-  final Future<List<Character>> Function() getCharacterList;
-  final ValueChanged<Character?> onSelect;
-  final bool useScaffold;
-
-  /// Creates a searchable list of character names using [getCharacterList].
-  /// Character name tiles are selectable, which calls [onSelect].
-  /// if [useScaffold] is true list is wrapped in scaffold.
-  /// Widget is adaptive to iOS, in which case it makes Cupertino widgets,
-  /// otherwise Material widgets are used.
-  const CharacterList({
-    super.key,
-    required this.appTitle,
-    required this.getCharacterList,
-    required this.onSelect,
-    required this.useScaffold,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<List<Character>>(
-        future: getCharacterList(),
-        builder: (context, snap) {
-          switch (snap.connectionState) {
-            case ConnectionState.none:
-              return CharacterListError(
-                error: 'Unknown error',
-                useScaffold: useScaffold,
-              );
-            case ConnectionState.waiting:
-              return CharacterListLoading(
-                useScaffold: useScaffold,
-              );
-            case ConnectionState.active:
-            case ConnectionState.done:
-              if (snap.hasData) {
-                return CharacterListBody(
-                  appTitle: appTitle,
-                  characters: snap.data!,
-                  useScaffold: useScaffold,
-                  onSelect: onSelect,
-                );
-              }
-              if (snap.hasError) {
-                return CharacterListError(
-                  error: snap.error!,
-                  useScaffold: useScaffold,
-                );
-              }
-              return CharacterListBody(
-                appTitle: appTitle,
-                characters: const [],
-                useScaffold: useScaffold,
-                onSelect: onSelect,
-              );
-          }
-        });
-  }
-}
-
-/// Shows a progress indicator, iOS adaptible, and wrapped in
-/// scaffold if [useScaffold] is true.
-class CharacterListLoading extends StatelessWidget {
-  final bool useScaffold;
-
-  const CharacterListLoading({
-    super.key,
-    required this.useScaffold,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (Platform.isIOS) {
-      const Widget cuperChild = Center(
-        child: CupertinoActivityIndicator(),
-      );
-      if (useScaffold) {
-        return const CupertinoPageScaffold(
-          navigationBar: CupertinoNavigationBar(
-            middle: Text('Characters'),
-          ),
-          child: cuperChild,
-        );
-      }
-      return cuperChild;
-    }
-    const Widget matChild = Center(
-      child: CircularProgressIndicator(),
-    );
-    if (useScaffold) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('Characters'),
-        ),
-        body: matChild,
-      );
-    }
-    return matChild;
-  }
-}
-
-/// Creates a searchable list of character names using [getCharacterList].
-/// Character name tiles are selectable, which calls [onSelect].
-/// if [useScaffold] is true list is wrapped in scaffold.
+/// Creates a searchable list of character names.
+/// Character name tiles are selectable.
 /// Widget is adaptive to iOS, in which case it makes Cupertino widgets,
 /// otherwise Material widgets are used.
 class CharacterListBody extends StatefulWidget {
   final String appTitle;
-  final List<Character> characters;
-  final bool useScaffold;
-  final ValueChanged<Character?> onSelect;
 
-  /// Creates a searchable list of character names using [getCharacterList].
-  /// Character name tiles are selectable, which calls [onSelect].
-  /// if [useScaffold] is true list is wrapped in scaffold.
+  /// Creates a searchable list of character names.
+  /// Character name tiles are selectable.
   /// Widget is adaptive to iOS, in which case it makes Cupertino widgets,
   /// otherwise Material widgets are used.
   const CharacterListBody({
     super.key,
     required this.appTitle,
-    required this.characters,
-    required this.useScaffold,
-    required this.onSelect,
+    // required this.characters,
   });
 
   @override
-  State<CharacterListBody> createState() => _CharacterListBodyState();
+  State<CharacterListBody> createState() => CharacterListBodyState();
 }
 
-class _CharacterListBodyState extends State<CharacterListBody> {
+class CharacterListBodyState extends State<CharacterListBody> {
   /// Current search string value only used in iOS version.
-  String _cuperSearch = '';
+  String _searchVaue = '';
 
   /// Controller for [CupertinoSearchTextField] which is only used
   ///  in iOS version
-  late final TextEditingController _cuperCtl;
+  late final TextEditingController _searchCtl;
 
-  /// Callback that keeps [_cuperSearch] current
-  void _cuperListener() {
-    setState(() => _cuperSearch = _cuperCtl.value.text);
+  /// Callback that keeps [_searchVaue] current
+  void _searchListener() {
+    setState(() => _searchVaue = _searchCtl.value.text);
   }
 
   @override
   void initState() {
     super.initState();
-    _cuperCtl = TextEditingController();
-    _cuperCtl.addListener(_cuperListener);
+    _searchCtl = TextEditingController();
+    _searchCtl.addListener(_searchListener);
   }
 
-  /// Returns list of platform adaptive tiles based on search
-  List<Widget> _searchResults(String text, bool isIOS, Brightness brightness) {
+  List<Character> _find(String text, List<Character> list) {
     if (text.isEmpty) {
       return [];
     }
-    return widget.characters
+    return list
         .where((e) => e.description.toLowerCase().contains(text.toLowerCase()))
-        .map((e) => _transformCharacter(e, text, isIOS, brightness))
         .toList();
   }
 
-  /// Transforms [character] into a platform adaptive tile with
-  /// search substring in bold.
-  Widget _transformCharacter(
-    Character character,
-    String text,
-    bool isIOS,
-    Brightness brightness,
-  ) {
-    return isIOS
-        ? CupertinoListTile(
-            title: Text(character.name),
-            subtitle: _subtitle(character, text, brightness),
-            onTap: () => _tileTap(character),
-          )
-        : ListTile(
-            title: Text(character.name),
-            subtitle: _subtitle(character, text, brightness),
-            onTap: () => _tileTap(character),
+  @override
+  Widget build(BuildContext context) {
+    AppController controller =
+        ListDetail.of<Character>(context).controller as AppController;
+
+    bool useScaffold = !controller.isSplit;
+
+    return StreamBuilder<List<Character>>(
+      stream: controller.stream,
+      builder: (context, snap) {
+        if (snap.hasData) {
+
+          // If search is empty, show all.
+          // Otherwise, show subset matching search
+          List<Widget> results = _searchVaue.isEmpty
+              ? snap.data!
+                  .map((char) => CharacterListTile(
+                        character: char,
+                        onSelect: (character) => controller.select = character,
+                        useScaffold: useScaffold,
+                      ))
+                  .toList()
+              : _find(_searchVaue, snap.data!)
+                  .map((char) => CharacterListTile(
+                        character: char,
+                        onSelect: (character) => controller.select = character,
+                        useScaffold: useScaffold,
+                        searchText: _searchVaue,
+                      ))
+                  .toList();
+
+          if (Platform.isIOS) {
+            return SingleChildScrollView(
+              child: CupertinoListSection(
+                header: CupertinoSearchTextField(
+                  controller: _searchCtl,
+                  onSuffixTap: _searchCtl.clear,
+                ),
+                children: results,
+              ),
+            );
+          }
+          
+          return MaterialListSection(
+            header: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: TextField(
+                controller: _searchCtl,
+                decoration: InputDecoration(
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: IconButton(
+                    onPressed: () => _searchCtl.clear(),
+                    icon: const Icon(Icons.close),
+                  ),
+                ),
+              ),
+            ),
+            children: results,
           );
+        }
+        return const Center(child: CircularProgressIndicator.adaptive());
+      },
+    );
   }
 
-  /// Returns a RichText based on [character.description] with [text] in bold.
-  RichText _subtitle(Character character, String text, Brightness brightness) {
-    int start = character.description.toLowerCase().indexOf(text.toLowerCase());
-    int end = start + text.length;
+  @override
+  void dispose() {
+    _searchCtl.removeListener(_searchListener);
+    _searchCtl.dispose();
+    super.dispose();
+  }
+}
+
+/// Similar to CupertinoListSection. Shows a header widget
+/// followed by a list.
+class MaterialListSection extends StatelessWidget {
+  /// Similar to CupertinoListSection. Shows a [header] widget
+  /// followed by a ListView of [children].
+  const MaterialListSection({
+    super.key,
+    required this.header,
+    required this.children,
+  });
+
+  final Widget header;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: header,
+        ),
+        Expanded(
+          child: ListView(
+            children: children,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// ListTile that can be the name-only version for the list
+/// portion of the layout or shown in the search results.
+/// [searchText] determines which version is made.
+/// Selecting in either state calls [onSelect].
+/// Name-only tiles show only the character name.
+/// Search-tiles show name and description with the 
+/// search text in bold.
+class CharacterListTile extends StatelessWidget {
+  const CharacterListTile({
+    super.key,
+    required this.character,
+    required this.onSelect,
+    required this.useScaffold,
+    this.searchText,
+  });
+
+  final Character character;
+  final ValueChanged<Character> onSelect;
+  final bool useScaffold;
+  final String? searchText;
+
+  /// Returns a RichText based on [character.description] with [searchText] in bold.
+  RichText _subtitle(
+      Character character, String searchText, Brightness brightness) {
+    int start =
+        character.description.toLowerCase().indexOf(searchText.toLowerCase());
+    int end = start + searchText.length;
     TextStyle style = TextStyle(
       color: brightness == Brightness.dark ? Colors.white70 : Colors.black87,
     );
@@ -219,14 +214,14 @@ class _CharacterListBodyState extends State<CharacterListBody> {
     );
   }
 
-  void _tileTap(Character character) {
-    widget.onSelect(character);
-    if (widget.useScaffold) {
-      _openDetails(character);
+  void _tileTap(BuildContext context, Character character) {
+    onSelect(character);
+    if (useScaffold) {
+      _openDetails(context, character);
     }
   }
 
-  void _openDetails(Character character) {
+  void _openDetails(BuildContext context, Character character) {
     final route = Platform.isIOS
         ? CupertinoPageRoute(
             builder: (context) => CharacterDetailPhone(
@@ -241,132 +236,26 @@ class _CharacterListBodyState extends State<CharacterListBody> {
     Navigator.of(context).push(route);
   }
 
-  /// Transforms [character] into a [CupertinoListTile]
-  Widget _cuperTransform(Character character) => CupertinoListTile(
-        title: Text(character.name),
-        onTap: () => _tileTap(character),
-      );
-
-  /// Transforms [character] into a [ListTile]
-  Widget _matTransform(Character character) => ListTile(
-        title: Text(character.name),
-        onTap: () => _tileTap(character),
-      );
-
   @override
   Widget build(BuildContext context) {
+    Brightness brightness;
     if (Platform.isIOS) {
-      final Widget cuperChild = SingleChildScrollView(
-        child: CupertinoListSection(
-          header: CupertinoSearchTextField(
-            controller: _cuperCtl,
-            onSuffixTap: _cuperCtl.clear,
-          ),
-          children: _cuperSearch.isEmpty
-              ? widget.characters.map(_cuperTransform).toList()
-              : _searchResults(
-                  _cuperSearch,
-                  true,
-                  CupertinoTheme.brightnessOf(context),
-                ),
-        ),
+      brightness = CupertinoTheme.brightnessOf(context);
+      return CupertinoListTile(
+        title: Text(character.name),
+        subtitle: searchText != null
+            ? _subtitle(character, searchText!, brightness)
+            : null,
+        onTap: () => _tileTap(context, character),
       );
-      if (widget.useScaffold) {
-        return CupertinoPageScaffold(
-          navigationBar: CupertinoNavigationBar(middle: Text(widget.appTitle)),
-          child: Padding(
-            padding: kCupertinoNavBarHeight,
-            child: cuperChild,
-          ),
-        );
-      }
-      return cuperChild;
     }
-    Widget matChild = ListView(
-      children: widget.characters.map(_matTransform).toList(),
+    brightness = Theme.of(context).brightness;
+    return ListTile(
+      title: Text(character.name),
+      subtitle: searchText != null
+          ? _subtitle(character, searchText!, brightness)
+          : null,
+      onTap: () => _tileTap(context, character),
     );
-    matChild = Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Padding(
-          padding: kMaterialSearchPadding,
-          child: SearchAnchor.bar(
-            suggestionsBuilder: (context, ctl) => _searchResults(
-              ctl.value.text,
-              false,
-              Theme.of(context).brightness,
-            ),
-            isFullScreen: widget.useScaffold,
-          ),
-        ),
-        Expanded(child: matChild),
-      ],
-    );
-    if (widget.useScaffold) {
-      return Scaffold(
-        appBar: AppBar(title: Text(widget.appTitle)),
-        body: matChild,
-      );
-    }
-    return matChild;
-  }
-
-  @override
-  void dispose() {
-    _cuperCtl.removeListener(_cuperListener);
-    _cuperCtl.dispose();
-    super.dispose();
-  }
-}
-
-/// Shows [error] in platform adaptive widget wrapped in scaffold
-/// if [useScaffold] is true.
-class CharacterListError extends StatelessWidget {
-  final Object error;
-  final bool useScaffold;
-
-  /// Shows [error] in platform adaptive widget wrapped in scaffold
-  /// if [useScaffold] is true.
-  const CharacterListError({
-    super.key,
-    required this.error,
-    required this.useScaffold,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    const title = Text('Characters');
-    if (Platform.isIOS) {
-      Widget cuperChild = Center(
-        child: Text(
-          error.toString(),
-          style: TextStyle(
-              color: CupertinoTheme.of(context).brightness == Brightness.dark
-                  ? Colors.white70
-                  : Colors.black87),
-        ),
-      );
-      if (useScaffold) {
-        return CupertinoPageScaffold(
-          navigationBar: const CupertinoNavigationBar(
-            middle: title,
-          ),
-          child: cuperChild,
-        );
-      }
-      return cuperChild;
-    }
-    Widget matChild = Center(
-      child: Text(error.toString()),
-    );
-    if (useScaffold) {
-      return Scaffold(
-        appBar: AppBar(
-          title: title,
-        ),
-        body: matChild,
-      );
-    }
-    return matChild;
   }
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
+import 'package:list_detail_base/list_detail_base.dart';
 import 'package:wireviewer/base/models/character.dart';
 import 'package:wireviewer/base/models/constants.dart';
 
@@ -14,7 +14,7 @@ class CharacterDetailTablet extends StatelessWidget {
   /// the value of [selectedCharacter].
   const CharacterDetailTablet({
     super.key,
-    required this.selectedCharacter,
+    // required this.selectedCharacter,
   });
 
   /// ValueListenable used in ValueListenableBuilder.
@@ -22,12 +22,12 @@ class CharacterDetailTablet extends StatelessWidget {
   /// When value is not null, character image (if imageURL
   /// is not empty), name, and description are shown.
   /// Transitions are fade-animated.
-  final ValueListenable<Character?> selectedCharacter;
-
+  // final ValueListenable<Character?> selectedCharacter;
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<Character?>(
-      valueListenable: selectedCharacter,
+      valueListenable:
+          ListDetail.of<Character>(context).controller.selectedItem,
       builder: (context, character, _) {
         Widget body;
 
@@ -96,8 +96,7 @@ class CharacterDetailPhone extends StatelessWidget {
         ),
       ),
       Padding(
-        padding:
-            Platform.isIOS ? kCupertinoDescriptionPadding : EdgeInsets.zero,
+        padding: kCupertinoDescriptionPadding,
         child: CharacterDescription(
           character: character,
         ),

@@ -1,7 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:list_detail_base/list_detail_base.dart';
 
 import 'package:wireviewer/base/models/character.dart';
 
@@ -10,7 +11,7 @@ String _duckDuckGoQuery(String showName) {
   return "http://api.duckduckgo.com/?q=$showName+characters&format=json";
 }
 
-class AppController {
+class AppController extends ListDetailController<Character> {
   /// The name of the used in the query field of the duckduckgo API call.
   /// [showName] must conform to API. See https://serpapi.com/duckduckgo-search-api
   final String showName;
@@ -24,18 +25,7 @@ class AppController {
   AppController({
     required this.showName,
     required this.client,
-  });
-
-  /// Underlying selection ValueNotifier.
-  final ValueNotifier<Character?> _selectedCharacter = ValueNotifier(null);
-
-  /// The currently selected Character. If none is selected, value == null.
-  /// Listen to this Listenable for selection changes.
-  ValueListenable<Character?> get selectedCharacter => _selectedCharacter;
-
-  /// Select the character. Set to null to unselect. Changes trigger
-  /// notifications to all listeners.
-  set select(Character? character) => _selectedCharacter.value = character;
+  }) : super();
 
   /// Returns list of all characters.
   Future<List<Character>> fetchAll() async {
@@ -51,8 +41,19 @@ class AppController {
         'HTTP request failed with status code: ${response.statusCode}');
   }
 
-  /// Dispose of resources that need to be disposed.
+  /// Setter for receiving fetched character list which is then
+  /// added to a StreamController to which other views can listen.
+  set characterList(List<Character> value) => _strCtl.add(value);
+
+  /// The underlying StreamController for passing character lists.
+  final StreamController<List<Character>> _strCtl = StreamController();
+
+  /// Stream of character list.
+  Stream<List<Character>> get stream => _strCtl.stream;
+
+  @override
   void dispose() {
-    _selectedCharacter.dispose();
+    _strCtl.close();
+    super.dispose();
   }
 }
